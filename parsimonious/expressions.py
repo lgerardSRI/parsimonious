@@ -23,10 +23,12 @@ class Expression(StrAndRepr):
     # Slots are about twice as fast as __dict__-based attributes:
     # http://stackoverflow.com/questions/1336791/dictionary-vs-object-which-is-more-efficient-and-why
 
-    # Top-level expressions--rules--have names. Subexpressions are named ''.
+    # By convention kinds beginning with __ are treated like subexpressions
     __slots__ = ['name']
 
     def __init__(self, name=''):
+        if name is '':
+            name = "__" + self.__class__.__name__ + "__"
         self.name = name
 
     def parse(self, text, pos=0):

@@ -17,34 +17,34 @@ class BootstrappingGrammarTests(TestCase):
         text = '*'
         eq_(rule_grammar['quantifier'].parse(text),
             Node('quantifier', text, 0, 1, children=[
-                Node('', text, 0, 1), Node('_', text, 1, 1)]))
+                Node('__Regex__', text, 0, 1), Node('_', text, 1, 1)]))
         text = '?'
         eq_(rule_grammar['quantifier'].parse(text),
             Node('quantifier', text, 0, 1, children=[
-                Node('', text, 0, 1), Node('_', text, 1, 1)]))
+                Node('__Regex__', text, 0, 1), Node('_', text, 1, 1)]))
         text = '+'
         eq_(rule_grammar['quantifier'].parse(text),
             Node('quantifier', text, 0, 1, children=[
-                Node('', text, 0, 1), Node('_', text, 1, 1)]))
+                Node('__Regex__', text, 0, 1), Node('_', text, 1, 1)]))
 
     def test_spaceless_literal(self):
         text = '"anything but quotes#$*&^"'
         eq_(rule_grammar['spaceless_literal'].parse(text),
             Node('spaceless_literal', text, 0, len(text), children=[
-                Node('', text, 0, len(text))]))
+                Node('__Regex__', text, 0, len(text))]))
         text = r'''r"\""'''
         eq_(rule_grammar['spaceless_literal'].parse(text),
             Node('spaceless_literal', text, 0, 5, children=[
-                Node('', text, 0, 5)]))
+                Node('__Regex__', text, 0, 5)]))
 
     def test_regex(self):
         text = '~"[a-zA-Z_][a-zA-Z_0-9]*"LI'
         eq_(rule_grammar['regex'].parse(text),
             Node('regex', text, 0, len(text), children=[
-                 Node('', text, 0, 1),
+                 Node('__Literal__', text, 0, 1),
                  Node('spaceless_literal', text, 1, 25, children=[
-                     Node('', text, 1, 25)]),
-                 Node('', text, 25, 27),
+                     Node('__Regex__', text, 1, 25)]),
+                 Node('__Regex__', text, 25, 27),
                  Node('_', text, 27, 27)]))
 
     def test_successes(self):
@@ -127,7 +127,7 @@ class RuleVisitorTests(TestCase):
         # It should turn into a Node from the Optional and another from the
         # Literal within.
         eq_(default_rule.parse(howdy), Node('boy', howdy, 0, 5, children=[
-                                           Node('', howdy, 0, 5)]))
+                                           Node('__Literal__', howdy, 0, 5)]))
 
 
 class GrammarTests(TestCase):
@@ -145,7 +145,7 @@ class GrammarTests(TestCase):
         greeting_grammar = Grammar('greeting = "hi" / "howdy"')
         tree = greeting_grammar.parse('hi')
         eq_(tree, Node('greeting', 'hi', 0, 2, children=[
-                       Node('', 'hi', 0, 2)]))
+                       Node('__Literal__', 'hi', 0, 2)]))
 
     def test_unicode(self):
         """Assert that a ``Grammar`` can convert into a string-formatted series
@@ -227,8 +227,8 @@ class GrammarTests(TestCase):
 
         s = 'arp'
         eq_(grammar.parse('arp'), Node('starts_with_a', s, 0, 3, children=[
-                                      Node('', s, 0, 0),
-                                      Node('', s, 0, 3)]))
+                                      Node('__Lookahead__', s, 0, 0),
+                                      Node('__Regex__', s, 0, 3)]))
 
     def test_parens(self):
         grammar = Grammar(r'''sequence = "chitty" (" " "bang")+''')
@@ -238,14 +238,14 @@ class GrammarTests(TestCase):
         s = 'chitty bang bang'
         eq_(str(grammar.parse(s)),
             """<Node called "sequence" matching "chitty bang bang">
-    <Node matching "chitty">
-    <Node matching " bang bang">
-        <Node matching " bang">
-            <Node matching " ">
-            <Node matching "bang">
-        <Node matching " bang">
-            <Node matching " ">
-            <Node matching "bang">""")
+    <Node called "__Literal__" matching "chitty">
+    <Node called "__OneOrMore__" matching " bang bang">
+        <Node called "__Sequence__" matching " bang">
+            <Node called "__Literal__" matching " ">
+            <Node called "__Literal__" matching "bang">
+        <Node called "__Sequence__" matching " bang">
+            <Node called "__Literal__" matching " ">
+            <Node called "__Literal__" matching "bang">""")
 
     def test_resolve_refs_order(self):
         """Smoke-test a circumstance where lazy references don't get resolved."""
