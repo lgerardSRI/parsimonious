@@ -76,7 +76,10 @@ class Node(StrAndRepr):
             self.text,
             '  <-- *** We were here. ***' if error is self else '')]
         for n in self:
-            ret.append(indent(n.prettily(error=error)))
+            if error:
+                ret.append(indent(n.prettily(error=error)))
+            else:
+                ret.append(indent(str(n)))
         return '\n'.join(ret)
 
     def __unicode__(self):
@@ -95,21 +98,32 @@ class Node(StrAndRepr):
     def __ne__(self, other):
         return not self == other
 
-    def __repr__(self, top_level=True):
+
+    __repr_toplevel = True
+
+    def __repr__(self):
         """Return a bit of code (though not an expression) that will recreate
         me."""
         # repr() of unicode flattens everything out to ASCII, so we don't need
         # to explicitly encode things afterward.
-        ret = ["s = %r" % self.full_text] if top_level else []
+        if Node.__repr_toplevel:
+            ret = ["s = %r" % self.full_text]
+            toplevel_switch = True
+            Node.__repr_toplevel = False
+        else:
+            ret = []
+            toplevel_switch = False
         ret.append("%s(%r, s, %s, %s%s)" % (
             self.__class__.__name__,
             self.expr_name,
             self.start,
             self.end,
-            (', children=[%s]' %
-             ', '.join([c.__repr__(top_level=False) for c in self.children]))
-            if self.children else ''))
-        return '\n'.join(ret)
+            (', children=%s' % repr(self.children)
+             if self.children else '')))
+        ret = '\n'.join(ret)
+        if toplevel_switch:
+            Node.__repr_toplevel = True
+        return ret
 
 
 class RegexNode(Node):
