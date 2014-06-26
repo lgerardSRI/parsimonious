@@ -108,7 +108,7 @@ class Expression(StrAndRepr):
         return node
 
     def __unicode__(self):
-        return u'<%s %s at 0x%s>' % (
+        return '<%s %s at 0x%s>' % (
             self.__class__.__name__,
             self.as_rule(),
             id(self))
@@ -119,7 +119,7 @@ class Expression(StrAndRepr):
         Return unicode. If I have no ``name``, omit the left-hand side.
 
         """
-        return ((u'%s = %s' % (self.name, self._as_rhs())) if self.name else
+        return (('%s = %s' % (self.name, self._as_rhs())) if self.name else
                 self._as_rhs())
 
     def _unicode_members(self):
@@ -168,13 +168,13 @@ class Regex(Expression):
     __slots__ = ['re']
 
     def __init__(self, pattern, name='', ignore_case=False, locale=False,
-                 multiline=False, dot_all=False, unicode=False, verbose=False):
+                 multiline=False, dot_all=False, str=False, verbose=False):
         super(Regex, self).__init__(name)
         self.re = re.compile(pattern, (ignore_case and re.I) |
                                       (locale and re.L) |
                                       (multiline and re.M) |
                                       (dot_all and re.S) |
-                                      (unicode and re.U) |
+                                      (str and re.U) |
                                       (verbose and re.X))
 
     def _uncached_match(self, text, pos, cache, error):
@@ -189,7 +189,7 @@ class Regex(Expression):
     def _regex_flags_from_bits(self, bits):
         """Return the textual equivalent of numerically encoded regex flags."""
         flags = 'tilmsux'
-        return ''.join(flags[i] if (1 << i) & bits else '' for i in xrange(6))
+        return ''.join(flags[i] if (1 << i) & bits else '' for i in range(6))
 
     def _as_rhs(self):
         # TODO: Get backslash escaping right.
@@ -232,7 +232,7 @@ class Sequence(_Compound):
         return Node(self.name, text, pos, pos + length_of_sequence, children)
 
     def _as_rhs(self):
-        return u' '.join(self._unicode_members())
+        return ' '.join(self._unicode_members())
 
 class OneOf(_Compound):
     """A series of expressions, one of which must match
@@ -249,7 +249,7 @@ class OneOf(_Compound):
                 return Node(self.name, text, pos, node.end, children=[node])
 
     def _as_rhs(self):
-        return u' / '.join(self._unicode_members())
+        return ' / '.join(self._unicode_members())
 
 
 class Lookahead(_Compound):
@@ -266,7 +266,7 @@ class Lookahead(_Compound):
             return Node(self.name, text, pos, pos)
 
     def _as_rhs(self):
-        return u'&%s' % self._unicode_members()[0]
+        return '&%s' % self._unicode_members()[0]
 
 
 class Not(_Compound):
@@ -285,7 +285,7 @@ class Not(_Compound):
     def _as_rhs(self):
         # TODO: Make sure this parenthesizes the member properly if it's an OR
         # or AND.
-        return u'!%s' % self._unicode_members()[0]
+        return '!%s' % self._unicode_members()[0]
 
 
 # Quantifiers. None of these is strictly necessary, but they're darn handy.
@@ -303,7 +303,7 @@ class Optional(_Compound):
                 Node(self.name, text, pos, node.end, children=[node]))
 
     def _as_rhs(self):
-        return u'%s?' % self._unicode_members()[0]
+        return '%s?' % self._unicode_members()[0]
 
 
 # TODO: Merge with OneOrMore.
@@ -321,7 +321,7 @@ class ZeroOrMore(_Compound):
             new_pos += node.end - node.start
 
     def _as_rhs(self):
-        return u'%s*' % self._unicode_members()[0]
+        return '%s*' % self._unicode_members()[0]
 
 
 class OneOrMore(_Compound):
@@ -356,4 +356,4 @@ class OneOrMore(_Compound):
             return Node(self.name, text, pos, new_pos, children)
 
     def _as_rhs(self):
-        return u'%s+' % self._unicode_members()[0]
+        return '%s+' % self._unicode_members()[0]

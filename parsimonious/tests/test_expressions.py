@@ -1,11 +1,11 @@
-#coding=utf-8
+
 from unittest import TestCase
 
-from nose.tools import eq_, ok_, assert_raises
+from nose.tools import eq_, ok_, assert_raises  # @UnresolvedImport
 
 from parsimonious.exceptions import ParseError, IncompleteParseError
 from parsimonious.expressions import (Literal, Regex, Sequence, OneOf, Not,
-    Optional, ZeroOrMore, OneOrMore, Expression)
+    Optional, ZeroOrMore, OneOrMore)
 from parsimonious.grammar import Grammar, rule_grammar
 from parsimonious.nodes import Node
 
@@ -170,7 +170,7 @@ class ErrorReportingTests(TestCase):
             eq_(error.pos, 6)
             eq_(error.expr, grammar['close_parens'])
             eq_(error.text, text)
-            eq_(unicode(error), u"Rule 'close_parens' didn't match at '!!' (line 1, column 7).")
+            eq_(str(error), "Rule 'close_parens' didn't match at '!!' (line 1, column 7).")
 
     def test_rewinding(self):
         """Make sure rewinding the stack and trying an alternative (which
@@ -216,7 +216,7 @@ class ErrorReportingTests(TestCase):
         try:
             grammar.parse('chitty bangbang')
         except IncompleteParseError as error:
-            eq_(unicode(error), u"Rule 'sequence' matched in its entirety, but it didn't consume all the text. The non-matching portion of the text begins with 'bang' (line 1, column 12).")
+            eq_(str(error), "Rule 'sequence' matched in its entirety, but it didn't consume all the text. The non-matching portion of the text begins with 'bang' (line 1, column 12).")
 
     def test_favoring_named_rules(self):
         """Named rules should be used in error messages in favor of anonymous
@@ -226,7 +226,7 @@ class ErrorReportingTests(TestCase):
         try:
             grammar.parse('burp')
         except ParseError as error:
-            eq_(unicode(error), u"Rule 'starts_with_a' didn't match at 'burp' (line 1, column 1).")
+            eq_(str(error), "Rule 'starts_with_a' didn't match at 'burp' (line 1, column 1).")
 
     def test_line_and_column(self):
         """Make sure we got the line and column computation right."""
@@ -240,7 +240,7 @@ class ErrorReportingTests(TestCase):
         except ParseError as error:
             # TODO: Right now, this says "Rule <Literal "\n" at 0x4368250432>
             # didn't match". That's not the greatest. Fix that, then fix this.
-            ok_(unicode(error).endswith(ur"""didn't match at 'GOO' (line 2, column 4)."""))
+            ok_(str(error).endswith(r"""didn't match at 'GOO' (line 2, column 4)."""))
 
 
 class RepresentationTests(TestCase):
@@ -249,7 +249,7 @@ class RepresentationTests(TestCase):
     def test_unicode_crash(self):
         """Make sure matched unicode strings don't crash ``__str__``."""
         grammar = Grammar(r'string = ~r"\S+"u')
-        str(grammar.parse(u'中文'))
+        str(grammar.parse('中文'))
 
     def test_unicode(self):
         """Smoke-test the conversion of expressions to bits of rules.
@@ -258,4 +258,4 @@ class RepresentationTests(TestCase):
         ``GrammarTests.test_unicode``.
 
         """
-        unicode(rule_grammar)
+        str(rule_grammar)

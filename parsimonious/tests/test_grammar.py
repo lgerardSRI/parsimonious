@@ -1,8 +1,7 @@
 from sys import version_info
 from unittest import TestCase
 
-from nose import SkipTest
-from nose.tools import eq_, assert_raises, ok_
+from nose.tools import eq_, assert_raises, ok_  # @UnresolvedImport
 
 from parsimonious.exceptions import UndefinedLabel, ParseError
 from parsimonious.nodes import Node
@@ -108,7 +107,7 @@ class RuleVisitorTests(TestCase):
 
         """
         tree = rule_grammar.parse('''number = ~"[0-9]+"\n''')
-        rules, default_rule = RuleVisitor().visit(tree)
+        _, default_rule = RuleVisitor().visit(tree)
 
         text = '98'
         eq_(default_rule.parse(text), Node('number', text, 0, 2))
@@ -120,7 +119,7 @@ class RuleVisitorTests(TestCase):
 
     def test_optional(self):
         tree = rule_grammar.parse('boy = "howdy"?\n')
-        rules, default_rule = RuleVisitor().visit(tree)
+        _, default_rule = RuleVisitor().visit(tree)
 
         howdy = 'howdy'
 
@@ -156,7 +155,7 @@ class GrammarTests(TestCase):
                           bold_open  = "(("
                           bold_close = "))"
                           """)
-        lines = unicode(grammar).splitlines()
+        lines = str(grammar).splitlines()
         eq_(lines[0], 'bold_text = bold_open text bold_close')
         ok_('text = ~"[A-Z 0-9]*"i%s' % ('u' if version_info >= (3,) else '')
             in lines)
@@ -193,12 +192,10 @@ class GrammarTests(TestCase):
 
                           stars      = "**"
                           # Pretty good
-                          #Oh yeah.#""")  # Make sure a comment doesn't need a
-                                          # \n or \r to end.
+                          #Oh yeah.#""")
+        # Make sure a comment doesn't need a \n or \r to end.
         eq_(list(sorted(str(grammar).splitlines())),
             ['''bold_text = stars text stars''',
-             # TODO: Unicode flag is on by default in Python 3. I wonder if we
-             # should turn it on all the time in Parsimonious.
              '''stars = "**"''',
              '''text = ~"[A-Z 0-9]*"i%s''' % ('u' if version_info >= (3,)
                                               else '')])

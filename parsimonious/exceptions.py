@@ -13,9 +13,11 @@ class ParseError(StrAndRepr, Exception):
         self.expr = expr
 
     def __unicode__(self):
-        rule_name = ((u"'%s'" % self.expr.name) if self.expr.name else
-                     unicode(self.expr))
-        return u"Rule %s didn't match at '%s' (line %s, column %s)." % (
+        if self.expr.name:
+            rule_name = "'%s'" % self.expr.name
+        else:
+            rule_name = str(self.expr)
+        return "Rule %s didn't match at '%s' (line %s, column %s)." % (
                 rule_name,
                 self.text[self.pos:self.pos + 20],
                 self.line(),
@@ -45,7 +47,7 @@ class IncompleteParseError(ParseError):
     entire text."""
 
     def __unicode__(self):
-        return u"Rule '%s' matched in its entirety, but it didn't consume all the text. The non-matching portion of the text begins with '%s' (line %s, column %s)." % (
+        return "Rule '%s' matched in its entirety, but it didn't consume all the text. The non-matching portion of the text begins with '%s' (line %s, column %s)." % (
                 self.expr.name,
                 self.text[self.pos:self.pos + 20],
                 self.line(),
@@ -92,4 +94,6 @@ class UndefinedLabel(StrAndRepr, VisitationError):
         self.label = label
 
     def __unicode__(self):
-        return u'The label "%s" was never defined.' % self.label
+        return 'The label "%s" was never defined.' % self.label
+
+

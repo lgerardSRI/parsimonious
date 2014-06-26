@@ -70,7 +70,7 @@ class Node(StrAndRepr):
         # them all. Whoops.
         def indent(text):
             return '\n'.join(('    ' + line) for line in text.splitlines())
-        ret = [u'<%s%s matching "%s">%s' % (
+        ret = ['<%s%s matching "%s">%s' % (
             self.__class__.__name__,
             (' called "%s"' % self.expr_name) if self.expr_name else '',
             self.text,
@@ -174,11 +174,11 @@ class NodeVisitor(object):
         except VisitationError:
             # Don't catch and re-wrap already-wrapped exceptions.
             raise
-        except Exception as e:
+        except Exception:
             # Catch any exception, and tack on a parse tree so it's easier to
             # see where it went wrong.
             exc_class, exc, tb = sys.exc_info()
-            raise VisitationError, (exc, exc_class, node), tb
+            raise VisitationError(exc, exc_class, node).with_traceback(tb)
 
     def generic_visit(self, node, visited_children):
         """Default visitor method
@@ -197,6 +197,6 @@ class NodeVisitor(object):
 
     # Convenience methods you can call from your own visitors:
 
-    def lift_child(self, node, (first_child,)):
+    def lift_child(self, node, children):
         """Lift the sole child of ``node`` up to replace the node."""
-        return first_child
+        return children[0]

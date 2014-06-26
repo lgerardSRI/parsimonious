@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
-from nose.tools import eq_, assert_raises
+
+from nose.tools import eq_, assert_raises  # @UnresolvedImport
 
 from parsimonious.nodes import Node, NodeVisitor, VisitationError
 
@@ -63,13 +63,13 @@ def test_str():
     n = Node('text', 'o hai', 0, 5)
     good = '<Node called "text" matching "o hai">'
     eq_(str(n), good)
-    eq_(unicode(n), good)
+    eq_(str(n), good)
 
 
 def test_repr():
     """Test repr of ``Node``."""
-    s = u'hai ö'
-    boogie = u'böogie'
+    s = 'hai ö'
+    boogie = 'böogie'
     n = Node(boogie, s, 0, 3, children=[
             Node('', s, 3, 4), Node('', s, 4, 5)])
     eq_(repr(n), """s = {hai_o}\nNode({boogie}, s, 0, 3, children=[Node('', s, 3, 4), Node('', s, 4, 5)])""".format(hai_o=repr(s), boogie=repr(boogie)))
