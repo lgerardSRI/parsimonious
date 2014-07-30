@@ -97,3 +97,11 @@ class UndefinedLabel(StrAndRepr, VisitationError):
         return 'The label "%s" was never defined.' % self.label
 
 
+class RecursiveLabel(StrAndRepr, Exception):
+    """A label in a grammar seems to be recursive.
+    """
+    def __init__(self, label):
+        self.label = label
+    def __unicode__(self):
+        return ("The label {0} is recursive or"
+                " requires too many levels.".format(self.label))

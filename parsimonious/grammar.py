@@ -6,8 +6,9 @@ by hand.
 
 """
 from ast import literal_eval
+from copy import copy
 
-from parsimonious.exceptions import UndefinedLabel
+from parsimonious.exceptions import UndefinedLabel, RecursiveLabel
 from parsimonious.expressions import (Literal, Regex, Sequence, OneOf,
     Lookahead, Optional, ZeroOrMore, OneOrMore, Not, Epsilon)
 from parsimonious.nodes import NodeVisitor
@@ -338,7 +339,7 @@ class RuleVisitor(NodeVisitor):
         """
         return visited_children or node  # should semantically be a tuple
 
-    def _resolve_refs(self, rule_map, expr):
+    def _resolve_refs(self, rule_map):
         """Return an expression with all its lazy references recursively
         resolved.
 
@@ -346,24 +347,47 @@ class RuleVisitor(NodeVisitor):
         all subexpressions.
 
         """
-        if isinstance(expr, LazyReference):
-            label = str(expr)
-            try:
-                reffed_expr = rule_map[label]
-            except KeyError:
-                raise UndefinedLabel(expr)
-            return self._resolve_refs(rule_map, reffed_expr)
-
-        else:
-            original_members = getattr(expr, 'members', None)
-            if original_members is not None:
-                # Prevents infinite recursion for circular refs.
-                expr.members = None
-                resolved_members = [self._resolve_refs(rule_map, member)
-                                    for member in original_members]
-
-                expr.members = resolved_members
-            return expr
+        resolved = set()
+        def _resolve_ref(expr):
+            """ Update in place rule_map and resolved, returns expr resolved:
+            if it is a reference, its transitivly reffed exp is returned
+            if it is a compound exp, its members are resolved and it is returned
+            """
+#             nonlocal rule_map, resolved
+            if isinstance(expr, LazyReference):
+                label = str(expr)
+                try:
+                    reffed_expr = rule_map[label]
+                except KeyError:
+                    raise UndefinedLabel(expr)
+                try:
+                    reffed_expr = _resolve_ref(reffed_expr)
+                except RuntimeError:
+                    raise RecursiveLabel(label)
+                # Deal with rules aliasing expressions like A=B B='b' the LazyReference
+                # resolution will associate 'A' with the expression 'b' with name 'B'
+                if reffed_expr.name != label:
+                    reffed_expr = copy(reffed_expr)
+                    reffed_expr.name = label
+                rule_map[label] = reffed_expr
+                return reffed_expr
+            elif not expr in resolved:
+                #deal with _Compound expressions
+                original_members = getattr(expr, 'members', None)
+                if original_members != None:
+                    # Prevents infinite recursion for circular refs.
+                    expr.members = None
+                    resolved_members = [_resolve_ref(member)
+                                        for member in original_members]
+                    expr.members = resolved_members
+                resolved.add(expr)
+                return expr
+            else:
+                return expr
+        #rule_map will be updated in place, don't play with fire: copy the keys
+        rules = list(rule_map.keys())
+        for r in rules:
+            _resolve_ref(rule_map[r])
 
     def visit_rules(self, node, children):
         """Collate all the rules into a map. Return (map, default rule).
@@ -379,11 +403,9 @@ class RuleVisitor(NodeVisitor):
         # concatenation.
         rules = children[1]
         rule_map = dict((expr.name, expr) for expr in rules)
-
         # Resolve references. This tolerates forward references.
-        rule_map = dict((expr.name, self._resolve_refs(rule_map, expr))
-                        for expr in rules)
-        return rule_map, rules[0]
+        self._resolve_refs(rule_map)
+        return rule_map, rule_map[rules[0].name]
 
 
 # Bootstrap to level 1...

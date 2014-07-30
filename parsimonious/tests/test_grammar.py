@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from nose.tools import eq_, assert_raises, ok_  # @UnresolvedImport
 
-from parsimonious.exceptions import UndefinedLabel, ParseError
+from parsimonious.exceptions import UndefinedLabel, ParseError, RecursiveLabel
 from parsimonious.nodes import Node
 from parsimonious.grammar import rule_grammar, RuleVisitor, Grammar
 
@@ -280,11 +280,9 @@ class GrammarTests(TestCase):
     def test_badly_circular(self):
         """Uselessly circular references should be detected by the grammar
         compiler."""
-        raise SkipTest('We have yet to make the grammar compiler detect these.')
-        grammar = Grammar("""
+        assert_raises(RecursiveLabel, Grammar, """
             foo = bar
-            bar = foo
-            """)
+            bar = foo""")
 
     def test_parens_with_leading_whitespace(self):
         """Make sure a parenthesized expression is allowed to have leading
@@ -293,3 +291,11 @@ class GrammarTests(TestCase):
 
     def test_single_quoted_literals(self):
         Grammar("""foo = 'a' '"'""").parse('a"')
+
+    def test_alias_rule(self):
+        grammar = Grammar("A = B B = 'c' C = B A")
+        eq_(grammar['A'].name, 'A')
+        eq_(grammar['B'].name, 'B')
+        eq_(grammar['C'].members[0].name, 'B')
+        eq_(grammar['C'].members[1].name, 'A')
+

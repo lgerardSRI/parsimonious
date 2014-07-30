@@ -8,7 +8,8 @@ are public.
 # TODO: If this is slow, think about using cElementTree or something.
 import sys
 
-from parsimonious.exceptions import VisitationError
+from parsimonious.exceptions import VisitationError, UndefinedLabel,\
+    RecursiveLabel
 from parsimonious.utils import StrAndRepr
 
 
@@ -57,6 +58,7 @@ class Node(StrAndRepr):
     def text(self):
         """Return the text this node matched."""
         return self.full_text[self.start:self.end]
+
 
     # From here down is just stuff for testing and debugging.
 
@@ -171,7 +173,7 @@ class NodeVisitor(object):
         # up.
         try:
             return method(node, [self.visit(n) for n in node])
-        except VisitationError:
+        except (VisitationError, UndefinedLabel, RecursiveLabel):
             # Don't catch and re-wrap already-wrapped exceptions.
             raise
         except Exception:
