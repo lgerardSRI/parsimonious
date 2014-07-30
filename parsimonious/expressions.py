@@ -136,6 +136,17 @@ class Expression(StrAndRepr):
         """
         raise NotImplementedError
 
+class Epsilon(Expression):
+    """ Match the empty string.
+    """
+    __slots__ = []
+
+    def _uncached_match(self, text, pos, cache, error):
+        return Node(self.name, text, pos, pos)
+
+    def _as_rhs(self):
+        return "()"
+
 
 class Literal(Expression):
     """A string literal

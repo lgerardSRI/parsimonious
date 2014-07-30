@@ -9,7 +9,7 @@ from ast import literal_eval
 
 from parsimonious.exceptions import UndefinedLabel
 from parsimonious.expressions import (Literal, Regex, Sequence, OneOf,
-    Lookahead, Optional, ZeroOrMore, OneOrMore, Not)
+    Lookahead, Optional, ZeroOrMore, OneOrMore, Not, Epsilon)
 from parsimonious.nodes import NodeVisitor
 from parsimonious.utils import StrAndRepr
 
@@ -182,7 +182,7 @@ rule_syntax = (r'''
     spaceless_literal = ~"u?r?\"[^\"\\\\]*(?:\\\\.[^\"\\\\]*)*\""is /
                         ~"u?r?'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'"is
 
-    expression = ored / sequence / term
+    expression = ored / sequence / term / epsilon
     or_term = "/" _ term
     ored = term or_term+
     sequence = term term+
@@ -195,6 +195,7 @@ rule_syntax = (r'''
     parenthesized = "(" _ expression ")" _
     quantifier = ~"[*+?]" _
     reference = label !equals
+    epsilon = ""
 
     # A subsequent equal sign is the only thing that distinguishes a label
     # (which begins a new rule) from a reference (which is just a pointer to a
@@ -230,6 +231,10 @@ class RuleVisitor(NodeVisitor):
     quantifier_classes = {'?': Optional, '*': ZeroOrMore, '+': OneOrMore}
 
     visit_expression = visit_term = visit_atom = NodeVisitor.lift_child
+
+    def visit_epsilon(self, epsilon, children):
+        """ The empty expression """
+        return Epsilon()
 
     def visit_parenthesized(self, parenthesized, children):
         """Treat a parenthesized subexpression as just its contents.
