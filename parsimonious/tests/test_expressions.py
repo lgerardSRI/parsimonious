@@ -170,7 +170,7 @@ class ErrorReportingTests(TestCase):
             eq_(error.pos, 6)
             eq_(error.expr, grammar['close_parens'])
             eq_(error.text, text)
-            eq_(str(error), "Rule 'close_parens' didn't match at '!!' (line 1, column 7).")
+            eq_(str(error), "Rule 'close_parens' trying to match \"))\" didn't match at '!!' (line 1, column 7).")
 
     def test_rewinding(self):
         """Make sure rewinding the stack and trying an alternative (which
@@ -226,7 +226,7 @@ class ErrorReportingTests(TestCase):
         try:
             grammar.parse('burp')
         except ParseError as error:
-            eq_(str(error), "Rule 'starts_with_a' didn't match at 'burp' (line 1, column 1).")
+            eq_(str(error), "Rule 'starts_with_a' trying to match (&(\"a\") ~\"[a-z]+\"u) didn't match at 'burp' (line 1, column 1).")
 
     def test_line_and_column(self):
         """Make sure we got the line and column computation right."""

@@ -17,8 +17,9 @@ class ParseError(StrAndRepr, Exception):
             rule_name = "'%s'" % self.expr.name
         else:
             rule_name = str(self.expr)
-        return "Rule %s didn't match at '%s' (line %s, column %s)." % (
+        return "Rule %s trying to match %s didn't match at '%s' (line %s, column %s)." % (
                 rule_name,
+                self.expr._as_rhs(),
                 self.text[self.pos:self.pos + 20],
                 self.line(),
                 self.column())
