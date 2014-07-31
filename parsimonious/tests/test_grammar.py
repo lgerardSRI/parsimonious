@@ -156,7 +156,7 @@ class GrammarTests(TestCase):
                           bold_close = "))"
                           """)
         lines = str(grammar).splitlines()
-        eq_(lines[0], 'bold_text = bold_open text bold_close')
+        eq_(lines[0], 'bold_text = (bold_open text bold_close)')
         ok_('text = ~"[A-Z 0-9]*"i%s' % ('u' if version_info >= (3,) else '')
             in lines)
         ok_('bold_open = "(("' in lines)
@@ -195,7 +195,7 @@ class GrammarTests(TestCase):
                           #Oh yeah.#""")
         # Make sure a comment doesn't need a \n or \r to end.
         eq_(list(sorted(str(grammar).splitlines())),
-            ['''bold_text = stars text stars''',
+            ['''bold_text = (stars text stars)''',
              '''stars = "**"''',
              '''text = ~"[A-Z 0-9]*"i%s''' % ('u' if version_info >= (3,)
                                               else '')])

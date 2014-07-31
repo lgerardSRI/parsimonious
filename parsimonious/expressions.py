@@ -16,6 +16,17 @@ from parsimonious.utils import StrAndRepr
 __all__ = ['Expression', 'Literal', 'Regex', 'Sequence', 'OneOf', 'Lookahead',
            'Not', 'Optional', 'ZeroOrMore', 'OneOrMore']
 
+def is_internal(name):
+    """ By convention, expressions are considered internal if their name begins
+    with two underscore.
+    """
+    return len(name)>1 and name[0] == name[1] == '_'
+
+def as_rhs(expr):
+    """ Display expr as it would be written in a rhs of a grammar rule.
+    If its name is internal, decompose the expression otherwise use it.
+    """
+    return expr._as_rhs() if is_internal(expr.name) else expr.name
 
 class Expression(StrAndRepr):
     """A thing that can be matched against a piece of text"""
@@ -92,20 +103,16 @@ class Expression(StrAndRepr):
         expr_id = id(self)
         node = cache.get((expr_id, pos), ())  # TODO: Change to setdefault to prevent infinite recursion in left-recursive rules.
         if node is ():
-            node = cache[(expr_id, pos)] = self._uncached_match(text,
-                                                                pos,
-                                                                cache,
-                                                                error)
+            node = self._uncached_match(text, pos, cache, error)
+            cache[(expr_id, pos)] = node
 
         # Record progress for error reporting:
-        if node is None and pos >= error.pos and (
-                self.name or getattr(error.expr, 'name', None) is None):
-            # Don't bother reporting on unnamed expressions (unless that's all
-            # we've seen so far), as they're hard to track down for a human.
-            # Perhaps we could include the unnamed subexpressions later as
-            # auxilliary info.
-            error.expr = self
-            error.pos = pos
+        if node is None and pos >= error.pos: #We have an error and we progress
+            # Don't record __ rules unless that's all we've seen so far.
+            notworth = (is_internal(self.name) and hasattr(error.expr, 'name'))
+            if not notworth:
+                error.expr = self
+                error.pos = pos
 
         return node
 
@@ -123,12 +130,6 @@ class Expression(StrAndRepr):
         """
         return (('%s = %s' % (self.name, self._as_rhs())) if self.name else
                 self._as_rhs())
-
-    def _unicode_members(self):
-        """Return an iterable of my unicode-represented children, stopping
-        descent when we hit a named node so the returned value resembles the
-        input rule."""
-        return [(m.name or m._as_rhs()) for m in self.members]
 
     def _as_rhs(self):
         """Return the right-hand side of a rule that represents me.
@@ -220,6 +221,17 @@ class _Compound(Expression):
         super(_Compound, self).__init__(kwargs.get('name', ''))
         self.members = members
 
+    def _members_as_rhs(self):
+        """Return an iterable of my unicode-represented children, stopping
+        descent when we hit a named node so the returned value resembles the
+        input rule."""
+        return (as_rhs(m) for m in self.members)
+
+    def _child_as_rhs(self):
+        """ return the only child as rhs """
+        assert(len(self.members) == 1)
+        return as_rhs(self.members[0])
+
 
 class Sequence(_Compound):
     """A series of expressions that must match contiguous, ordered pieces of
@@ -245,7 +257,7 @@ class Sequence(_Compound):
         return Node(self.name, text, pos, pos + length_of_sequence, children)
 
     def _as_rhs(self):
-        return ' '.join(self._unicode_members())
+        return '(' + ' '.join(self._members_as_rhs()) + ')'
 
 class OneOf(_Compound):
     """A series of expressions, one of which must match
@@ -262,7 +274,7 @@ class OneOf(_Compound):
                 return Node(self.name, text, pos, node.end, children=[node])
 
     def _as_rhs(self):
-        return ' / '.join(self._unicode_members())
+        return ' / '.join(self._members_as_rhs())
 
 
 class Lookahead(_Compound):
@@ -279,7 +291,7 @@ class Lookahead(_Compound):
             return Node(self.name, text, pos, pos)
 
     def _as_rhs(self):
-        return '&%s' % self._unicode_members()[0]
+        return '&(%s)' % self._child_as_rhs()
 
 
 class Not(_Compound):
@@ -298,7 +310,7 @@ class Not(_Compound):
     def _as_rhs(self):
         # TODO: Make sure this parenthesizes the member properly if it's an OR
         # or AND.
-        return '!%s' % self._unicode_members()[0]
+        return '!(%s)' % self._child_as_rhs()
 
 
 # Quantifiers. None of these is strictly necessary, but they're darn handy.
@@ -316,7 +328,7 @@ class Optional(_Compound):
                 Node(self.name, text, pos, node.end, children=[node]))
 
     def _as_rhs(self):
-        return '%s?' % self._unicode_members()[0]
+        return '(%s)?' % self._child_as_rhs()
 
 
 # TODO: Merge with OneOrMore.
@@ -334,7 +346,7 @@ class ZeroOrMore(_Compound):
             new_pos += node.end - node.start
 
     def _as_rhs(self):
-        return '%s*' % self._unicode_members()[0]
+        return '(%s)*' % self._child_as_rhs()
 
 
 class OneOrMore(_Compound):
@@ -369,4 +381,4 @@ class OneOrMore(_Compound):
             return Node(self.name, text, pos, new_pos, children)
 
     def _as_rhs(self):
-        return '%s+' % self._unicode_members()[0]
+        return '(%s)+' % self._child_as_rhs()
