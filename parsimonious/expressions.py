@@ -107,10 +107,11 @@ class Expression(StrAndRepr):
             cache[(expr_id, pos)] = node
 
         # Record progress for error reporting:
+        # Strict pos > implies getting the deepest, loose >= get the topmost
         if node is None and pos >= error.pos: #We have an error and we progress
             # Don't record __ rules unless that's all we've seen so far.
             notworth = (is_internal(self.name) and hasattr(error.expr, 'name'))
-            if not notworth:
+            if not notworth or self.name == '__OneOf__':
                 error.expr = self
                 error.pos = pos
 
